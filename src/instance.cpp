@@ -211,4 +211,5 @@ Instance::~Instance() {
     }
 
     vkDestroyInstance(instance, nullptr);
+    std::cout << "instance deinit" << std::endl;
 }

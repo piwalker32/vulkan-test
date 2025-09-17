@@ -11,6 +11,8 @@ private:
 public:
     Instance(const char* appName, uint32_t appVersion, uint32_t apiVersion = VK_API_VERSION_1_0);
     ~Instance();
+
+    VkInstance getInstance() { return instance; }
 private:
     void setupDebugMessenger();
 };

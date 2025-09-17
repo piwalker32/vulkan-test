@@ -2,6 +2,7 @@
 #include <vulkan/vulkan_core.h>
 #include <instance.h>
 #include <window.h>
+#include <device.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -16,10 +17,11 @@ class HelloTriangleApplication {
 private:
     Window window;
     Instance instance;
+    Device device;
 
 public:
     HelloTriangleApplication() :
-     instance("Vulkan Test", VK_MAKE_VERSION(1, 0, 0)), window(WIDTH, HEIGHT, "Vulkan Test") {
+     instance("Vulkan Test", VK_MAKE_VERSION(1, 0, 0)), window(WIDTH, HEIGHT, "Vulkan Test"), device(&instance) {
     }
 
     void run() {
