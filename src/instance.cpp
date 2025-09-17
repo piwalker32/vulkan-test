@@ -121,7 +121,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
     createInfo.pUserData = nullptr;
 }
 
-Instance::Instance() {
+Instance::Instance(const char* appName, uint32_t appVersion, uint32_t apiVersion) {
     uint32_t glfwExtensionCount = 0;
     auto requiredExtensions = getRequiredExtensions();
 
@@ -161,11 +161,11 @@ Instance::Instance() {
 
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Hello Triangle";
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.pApplicationName = appName;
+    appInfo.applicationVersion = appVersion;
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+    appInfo.apiVersion = apiVersion;
 
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;

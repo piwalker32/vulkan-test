@@ -19,7 +19,7 @@ private:
 
 public:
     HelloTriangleApplication() :
-     instance(), window(WIDTH, HEIGHT, "Vulkan Test") {
+     instance("Vulkan Test", VK_MAKE_VERSION(1, 0, 0)), window(WIDTH, HEIGHT, "Vulkan Test") {
     }
 
     void run() {
