@@ -1,4 +1,5 @@
 #include "surface.h"
+#include "swapchain.h"
 #include <exception>
 #include <vulkan/vulkan_core.h>
 #include <instance.h>
@@ -20,13 +21,15 @@ private:
     Instance instance;
     Surface surface;
     Device device;
+    SwapChain swapchain;
 
 public:
     HelloTriangleApplication() :
         instance("Vulkan Test", VK_MAKE_VERSION(1, 0, 0)),
         window(WIDTH, HEIGHT, "Vulkan Test"),
         device(&instance, &surface),
-        surface(&instance, &window) {
+        surface(&instance, &window),
+        swapchain(&device, &window, &surface) {
     }
 
     void run() {

@@ -32,3 +32,15 @@ bool Window::shouldClose() {
 void Window::pollEvents() {
     glfwPollEvents();
 }
+
+int Window::getFramebufferWidth() {
+    int width;
+    glfwGetFramebufferSize(window, &width, nullptr);
+    return width;
+}
+
+int Window::getFramebufferHeight() {
+    int height;
+    glfwGetFramebufferSize(window, nullptr, &height);
+    return height;
+}

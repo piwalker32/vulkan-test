@@ -10,4 +10,6 @@ public:
     bool shouldClose();
     void pollEvents();
     GLFWwindow* getWindow() { return window; }
+    int getFramebufferWidth();
+    int getFramebufferHeight();
 };

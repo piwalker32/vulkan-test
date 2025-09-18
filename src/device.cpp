@@ -1,8 +1,10 @@
+#include "surface.h"
 #include <cstdint>
 #include <device.h>
 #include <optional>
 #include <set>
 #include <stdexcept>
+#include <string>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -10,18 +12,29 @@
 #include <vulkan/vulkan_core.h>
 #include <debug.h>
 
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
+SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, Surface* surface) {
+    SwapChainSupportDetails details;
 
-    bool isComplete() {
-        return graphicsFamily.has_value() && presentFamily.has_value();
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface->getSurface(), &details.capabilities);
+
+    uint32_t formatCount = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface->getSurface(), &formatCount, nullptr);
+
+    if(formatCount != 0) {
+        details.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface->getSurface(), &formatCount, details.formats.data());
     }
 
-    bool noPresent() {
-        return graphicsFamily.has_value();
+    uint32_t presentModeCount = 0;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface->getSurface(), &presentModeCount, nullptr);
+
+    if(presentModeCount != 0) {
+        details.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface->getSurface(), &presentModeCount, details.presentModes.data());
     }
-};
+
+    return details;
+}
 
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, Surface* surface) {
     QueueFamilyIndices indices;
@@ -52,9 +65,29 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, Surface* surface) 
     return indices;
 }
 
+bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+    for (const auto& extension : availableExtensions) {
+        requiredExtensions.erase(extension.extensionName);
+    }
+
+    return requiredExtensions.empty();
+}
+
 bool isDeviceSuitable(VkPhysicalDevice device, Surface* surface) {
     QueueFamilyIndices indices = findQueueFamilies(device, surface);
-    return indices.isComplete() || (indices.noPresent() && surface == nullptr);
+    bool swapchainAdequate = false;
+    if(checkDeviceExtensionSupport(device)) {
+        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, surface);
+        swapchainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+    }
+    return (indices.isComplete() || (indices.noPresent() && surface == nullptr)) && checkDeviceExtensionSupport(device) && swapchainAdequate;
 }
 
 VkPhysicalDevice pickPhysicalDevice(Instance* instance, Surface* surface) {
@@ -81,7 +114,8 @@ VkPhysicalDevice pickPhysicalDevice(Instance* instance, Surface* surface) {
     return selectedDevice;
 }
 
-Device::Device(Instance* instance,  Surface* surface) {
+Device::Device(Instance* instance,  Surface* surface) :
+        surface(surface), instance(instance) {
     physicalDevice = pickPhysicalDevice(instance, surface);
     if(physicalDevice == VK_NULL_HANDLE) {
         throw std::runtime_error("UNABLE TO FIND SUITABLE GPU!");
@@ -119,7 +153,8 @@ Device::Device(Instance* instance,  Surface* surface) {
 
     createInfo.pEnabledFeatures = &deviceFeatures;
     
-    createInfo.enabledExtensionCount = 0;
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
     if (enableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
@@ -141,4 +176,12 @@ Device::Device(Instance* instance,  Surface* surface) {
 
 Device::~Device(){
     vkDestroyDevice(device, nullptr);
+}
+
+SwapChainSupportDetails Device::getSwapChainDetails() {
+    return querySwapChainSupport(physicalDevice, surface);
+}
+
+QueueFamilyIndices Device::getQueueFamilies() {
+    return findQueueFamilies(physicalDevice, surface);
 }
