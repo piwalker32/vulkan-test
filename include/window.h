@@ -9,4 +9,5 @@ public:
     ~Window();
     bool shouldClose();
     void pollEvents();
+    GLFWwindow* getWindow() { return window; }
 };

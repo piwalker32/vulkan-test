@@ -1,3 +1,4 @@
+#include "surface.h"
 #include <exception>
 #include <vulkan/vulkan_core.h>
 #include <instance.h>
@@ -17,11 +18,15 @@ class HelloTriangleApplication {
 private:
     Window window;
     Instance instance;
+    Surface surface;
     Device device;
 
 public:
     HelloTriangleApplication() :
-     instance("Vulkan Test", VK_MAKE_VERSION(1, 0, 0)), window(WIDTH, HEIGHT, "Vulkan Test"), device(&instance) {
+        instance("Vulkan Test", VK_MAKE_VERSION(1, 0, 0)),
+        window(WIDTH, HEIGHT, "Vulkan Test"),
+        device(&instance, &surface),
+        surface(&instance, &window) {
     }
 
     void run() {
@@ -39,12 +44,12 @@ private:
 };
 
 int main() {
-    HelloTriangleApplication app;
 
     try{
+        HelloTriangleApplication app;
         app.run();
     } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+        std::cerr << "\033[31m" << e.what() << "\033[0m" << std::endl;
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
