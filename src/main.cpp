@@ -32,7 +32,7 @@ public:
         device(&instance, &surface),
         surface(&instance, &window),
         swapchain(&device, &window, &surface),
-        pipeline(&device, { "basic.frag.spv", "basic.vert.spv" }) {
+        pipeline(&device, { "basic.frag.spv", "basic.vert.spv" }, &swapchain) {
     }
 
     void run() {

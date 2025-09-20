@@ -1,13 +1,15 @@
 #pragma once
 
 #include "device.h"
+#include "swapchain.h"
 #include <vector>
 #include <vulkan/vulkan_core.h>
 class Pipeline {
 private:
     VkPipeline pipeline;
     Device* device;
+    VkPipelineLayout layout;
 public:
-    Pipeline(Device* device, const std::vector<const char*> shaderFiles);
+    Pipeline(Device* device, const std::vector<const char*> shaderFiles, SwapChain* swapchain);
     ~Pipeline();
 };

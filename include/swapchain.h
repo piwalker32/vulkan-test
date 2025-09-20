@@ -20,4 +20,5 @@ private:
 public:
     SwapChain(Device* device, Window* window, Surface* surface);
     ~SwapChain();
+    VkExtent2D getSwapChainExtent() { return swapchainImageExtent; }
 };
