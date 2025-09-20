@@ -1,5 +1,6 @@
 #pragma once
 
+#include "commandbuffer.h"
 #include "device.h"
 #include "swapchain.h"
 #include <vector>
@@ -11,6 +12,7 @@ private:
     VkPipelineLayout layout;
     VkRenderPass renderPass;
 public:
-    Pipeline(Device* device, const std::vector<const char*> shaderFiles, SwapChain* swapchain);
+    Pipeline(Device* device, const std::vector<const char*> shaderFiles, SwapChain* swapchain, VkRenderPass renderPass);
     ~Pipeline();
+    void bind(CommandBuffer* buffer);
 };

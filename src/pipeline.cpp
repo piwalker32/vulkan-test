@@ -27,8 +27,8 @@ VkShaderStageFlagBits getStageFromFilename(const char* fileName) {
     return VK_SHADER_STAGE_ALL;
 }
 
-Pipeline::Pipeline(Device* device, const std::vector<const char*> shaderFiles, SwapChain* swapchain) :
-    device(device) {
+Pipeline::Pipeline(Device* device, const std::vector<const char*> shaderFiles, SwapChain* swapchain, VkRenderPass renderPass) :
+    device(device), renderPass(renderPass) {
     std::vector<Shader> shaders;
     shaders.reserve(shaderFiles.size());
     std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
@@ -137,40 +137,6 @@ Pipeline::Pipeline(Device* device, const std::vector<const char*> shaderFiles, S
         throw std::runtime_error("FAILED TO CREATE PIPELINE LAYOUT");
     }
 
-    //renderpass attachments, defines all framebuffers that could be attached may need further development in future
-    VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = swapchain->getSwapChainFormat();
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-    VkAttachmentReference colorAttachmentRef{};
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    //define subpasses, for now we only have one, but we may want to perform multiple passes in the future for various post processing effects
-    VkSubpassDescription subpass{};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef;
-
-    VkRenderPassCreateInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = 1;
-    renderPassInfo.pAttachments = &colorAttachment;
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-
-    if(vkCreateRenderPass(device->getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
-        throw std::runtime_error("FAILED TO CREATE RENDER PASS");
-    }
-
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.stageCount = static_cast<uint32_t>(shaderStageCreateInfos.size());
@@ -203,6 +169,9 @@ Pipeline::~Pipeline() {
 
     vkDestroyPipeline(device->getDevice(), pipeline, nullptr);
     vkDestroyPipelineLayout(device->getDevice(), layout, nullptr);
-    vkDestroyRenderPass(device->getDevice(), renderPass, nullptr);
 
+}
+
+void Pipeline::bind(CommandBuffer* buffer) {
+    vkCmdBindPipeline(buffer->getHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 }

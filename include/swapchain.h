@@ -22,4 +22,6 @@ public:
     ~SwapChain();
     VkExtent2D getSwapChainExtent() { return swapchainImageExtent; }
     VkFormat getSwapChainFormat() { return swapchainImageFormat; }
+    size_t getImageCount() { return imageViews.size(); }
+    ImageView* getImageView(size_t index) { return &imageViews[index]; }
 };

@@ -1,3 +1,4 @@
+#include "basic_renderer.h"
 #include "pipeline.h"
 #include "surface.h"
 #include "swapchain.h"
@@ -23,7 +24,7 @@ private:
     Surface surface;
     Device device;
     SwapChain swapchain;
-    Pipeline pipeline;
+    BasicRenderer renderer;
 
 public:
     HelloTriangleApplication() :
@@ -32,7 +33,7 @@ public:
         device(&instance, &surface),
         surface(&instance, &window),
         swapchain(&device, &window, &surface),
-        pipeline(&device, { "basic.frag.spv", "basic.vert.spv" }, &swapchain) {
+        renderer(&device, &swapchain) {
     }
 
     void run() {
