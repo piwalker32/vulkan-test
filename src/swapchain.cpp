@@ -105,6 +105,13 @@ SwapChain::SwapChain(Device* device, Window* window, Surface* surface) :
     vkGetSwapchainImagesKHR(device->getDevice(), swapchain, &imageCount, swapChainImages.data());
 
     std::cout << "Retrieved swapchain images" << std::endl;
+
+    imageViews.reserve(swapChainImages.size());
+    for (size_t i = 0; i < swapChainImages.size(); i++) {
+        imageViews.emplace_back(device, swapChainImages[i], swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+    }
+
+    std::cout << "Created swapchain imageViews" << std::endl;
 }
 
 SwapChain::~SwapChain() {

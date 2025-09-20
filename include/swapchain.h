@@ -1,6 +1,7 @@
 #pragma once
 
 #include "device.h"
+#include "imageview.h"
 #include "surface.h"
 #include "window.h"
 #include <vector>
@@ -12,6 +13,7 @@ private:
     Surface* surface;
     VkSwapchainKHR swapchain;
     std::vector<VkImage> swapChainImages;
+    std::vector<ImageView> imageViews;
 
     VkFormat swapchainImageFormat;
     VkExtent2D swapchainImageExtent;

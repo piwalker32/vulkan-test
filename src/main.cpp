@@ -47,7 +47,7 @@ private:
 };
 
 int main() {
-
+    
     try{
         HelloTriangleApplication app;
         app.run();
