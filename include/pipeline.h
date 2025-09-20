@@ -9,6 +9,7 @@ private:
     VkPipeline pipeline;
     Device* device;
     VkPipelineLayout layout;
+    VkRenderPass renderPass;
 public:
     Pipeline(Device* device, const std::vector<const char*> shaderFiles, SwapChain* swapchain);
     ~Pipeline();
