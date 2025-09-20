@@ -1,5 +1,6 @@
 #include "basic_renderer.h"
 #include "fence.h"
+#include "global_config.h"
 #include "pipeline.h"
 #include "surface.h"
 #include "swapchain.h"
@@ -28,9 +29,10 @@ private:
     Device device;
     SwapChain swapchain;
     BasicRenderer renderer;
-    Semaphore imageAvailableSemaphore;
+    std::vector<Semaphore> imageAvailableSemaphores;
     std::vector<Semaphore> renderFinishedSemaphores;
-    Fence inFlightFence;
+    std::vector<Fence> inFlightFences;
+    uint32_t currentFrame = 0;
 
 public:
     HelloTriangleApplication() :
@@ -39,12 +41,16 @@ public:
         device(&instance, &surface),
         surface(&instance, &window),
         swapchain(&device, &window, &surface),
-        renderer(&device, &swapchain),
-        imageAvailableSemaphore(&device),
-        inFlightFence(&device, true) {
+        renderer(&device, &swapchain) {
         renderFinishedSemaphores.reserve(swapchain.getImageCount());
-        for(int i = 0; i < swapchain.getImageCount(); i++) {
+        imageAvailableSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
+        inFlightFences.reserve(MAX_FRAMES_IN_FLIGHT);
+        for(size_t i = 0; i < swapchain.getImageCount(); i++) {
             renderFinishedSemaphores.emplace_back(&device);
+        }
+        for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            imageAvailableSemaphores.emplace_back(&device);
+            inFlightFences.emplace_back(&device, true);
         }
     }
 
@@ -63,13 +69,15 @@ private:
     }
 
     void drawFrame() {
-        inFlightFence.wait();
-        inFlightFence.reset();
-        swapchain.swap(&imageAvailableSemaphore);
+        inFlightFences[currentFrame].wait();
+        inFlightFences[currentFrame].reset();
+        swapchain.swap(&imageAvailableSemaphores[currentFrame]);
         uint32_t imageIndex = swapchain.getImageIndex();
-        renderer.render(&inFlightFence, std::vector<Semaphore*> {&renderFinishedSemaphores[imageIndex]}, 
-            std::vector<Semaphore*> {&imageAvailableSemaphore}, std::vector<VkPipelineStageFlags> {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT});
+        renderer.render(currentFrame, &inFlightFences[currentFrame], std::vector<Semaphore*> {&renderFinishedSemaphores[imageIndex]}, 
+            std::vector<Semaphore*> {&imageAvailableSemaphores[currentFrame]}, std::vector<VkPipelineStageFlags> {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT});
         swapchain.present(std::vector<Semaphore*>{&renderFinishedSemaphores[imageIndex]});
+
+        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 };
 

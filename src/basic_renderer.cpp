@@ -1,4 +1,5 @@
 #include "commandbuffer.h"
+#include "global_config.h"
 #include "imageview.h"
 #include "pipeline.h"
 #include <basic_renderer.h>
@@ -63,11 +64,16 @@ static VkRenderPass createRenderPass(Device* device, SwapChain* swapchain) {
 
 BasicRenderer::BasicRenderer(Device* device, SwapChain* swapchain)
     :device(device), swapchain(swapchain), renderPass(createRenderPass(device, swapchain)), pipeline(device, shaders, swapchain, renderPass),
-    pool(device, device->getQueueFamilies().graphicsFamily.value()), buffer(device, &pool) {
+    pool(device, device->getQueueFamilies().graphicsFamily.value()) {
     
     framebuffers.reserve(swapchain->getImageCount());
     for(size_t i = 0; i < swapchain->getImageCount(); i++) {
         framebuffers.emplace_back(device, renderPass, swapchain->getSwapChainExtent(), std::vector<VkImageView>{ swapchain->getImageView(i)->getImageView() });
+    }
+
+    buffers.reserve(MAX_FRAMES_IN_FLIGHT);
+    for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        buffers.emplace_back(device, &pool);
     }
 }
 
@@ -75,7 +81,7 @@ BasicRenderer::~BasicRenderer() {
     vkDestroyRenderPass(device->getDevice(), renderPass, nullptr);
 }
 
-void BasicRenderer::beginRenderPass() {
+void BasicRenderer::beginRenderPass(size_t frame) {
     uint32_t frameIndex = swapchain->getImageIndex();
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -87,17 +93,17 @@ void BasicRenderer::beginRenderPass() {
     VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
-    vkCmdBeginRenderPass(buffer.getHandle(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(buffers[frame].getHandle(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-void BasicRenderer::render(Fence* fence, std::vector<Semaphore*> signalSemaphores, std::vector<Semaphore*> waitSemaphores, std::vector<VkPipelineStageFlags> waitStages) {
-    buffer.reset();
-    buffer.startRecording();
-    beginRenderPass();
-    pipeline.bind(&buffer);
+void BasicRenderer::render(size_t frame, Fence* fence, std::vector<Semaphore*> signalSemaphores, std::vector<Semaphore*> waitSemaphores, std::vector<VkPipelineStageFlags> waitStages) {
+    buffers[frame].reset();
+    buffers[frame].startRecording();
+    beginRenderPass(frame);
+    pipeline.bind(&buffers[frame]);
     //TODO specify dynamic viewport and scissor state
-    vkCmdDraw(buffer.getHandle(), 3, 1, 0, 0);
-    vkCmdEndRenderPass(buffer.getHandle());
-    buffer.stopRecording();
-    buffer.submit(fence, signalSemaphores, waitSemaphores, waitStages);
+    vkCmdDraw(buffers[frame].getHandle(), 3, 1, 0, 0);
+    vkCmdEndRenderPass(buffers[frame].getHandle());
+    buffers[frame].stopRecording();
+    buffers[frame].submit(fence, signalSemaphores, waitSemaphores, waitStages);
 }

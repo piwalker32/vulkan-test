@@ -16,11 +16,11 @@ private:
     Pipeline pipeline;
     std::vector<Framebuffer> framebuffers;
     CommandPool pool;
-    CommandBuffer buffer;
+    std::vector<CommandBuffer> buffers;
 public:
     BasicRenderer(Device* device, SwapChain* swapchain);
     ~BasicRenderer();
-    void render(Fence* fence, std::vector<Semaphore*> signalSemaphores = {}, std::vector<Semaphore*> waitSemaphores = {}, std::vector<VkPipelineStageFlags> waitStages = {});
+    void render(size_t frame, Fence* fence, std::vector<Semaphore*> signalSemaphores = {}, std::vector<Semaphore*> waitSemaphores = {}, std::vector<VkPipelineStageFlags> waitStages = {});
 private:
-    void beginRenderPass();
+    void beginRenderPass(size_t frame);
 };
