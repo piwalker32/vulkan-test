@@ -1,5 +1,4 @@
 #include "shader.h"
-#include <iostream>
 #include <pipeline.h>
 #include <sstream>
 #include <string>
