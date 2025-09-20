@@ -4,6 +4,7 @@
 #include "imageview.h"
 #include "surface.h"
 #include "window.h"
+#include <semaphore.h>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 class SwapChain {
@@ -14,12 +15,16 @@ private:
     VkSwapchainKHR swapchain;
     std::vector<VkImage> swapChainImages;
     std::vector<ImageView> imageViews;
+    uint32_t imageIndex;
 
     VkFormat swapchainImageFormat;
     VkExtent2D swapchainImageExtent;
 public:
     SwapChain(Device* device, Window* window, Surface* surface);
     ~SwapChain();
+    void swap(Semaphore* semaphore = nullptr);
+    void present(std::vector<Semaphore*> waitSemaphores = {});
+    uint32_t getImageIndex() { return imageIndex; }
     VkExtent2D getSwapChainExtent() { return swapchainImageExtent; }
     VkFormat getSwapChainFormat() { return swapchainImageFormat; }
     size_t getImageCount() { return imageViews.size(); }

@@ -41,6 +41,9 @@ private:
 public:
     Device(Instance* instance, Surface* surface = nullptr);
     ~Device();
+    void waitIdle();
+    VkQueue getGraphicsQueue() { return graphicsQueue; }
+    VkQueue getPresentQueue() { return presentQueue; }
     VkDevice getDevice() { return device; }
     SwapChainSupportDetails getSwapChainDetails();
     QueueFamilyIndices getQueueFamilies();

@@ -35,12 +35,22 @@ static VkRenderPass createRenderPass(Device* device, SwapChain* swapchain) {
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorAttachmentRef;
 
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     renderPassInfo.attachmentCount = 1;
     renderPassInfo.pAttachments = &colorAttachment;
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
 
     VkRenderPass renderPass;
 
@@ -66,7 +76,7 @@ BasicRenderer::~BasicRenderer() {
 }
 
 void BasicRenderer::beginRenderPass() {
-    uint32_t frameIndex = 0; //TODO: get current frame from swapchain
+    uint32_t frameIndex = swapchain->getImageIndex();
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = renderPass;
@@ -80,12 +90,14 @@ void BasicRenderer::beginRenderPass() {
     vkCmdBeginRenderPass(buffer.getHandle(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-void BasicRenderer::render() {
+void BasicRenderer::render(Fence* fence, std::vector<Semaphore*> signalSemaphores, std::vector<Semaphore*> waitSemaphores, std::vector<VkPipelineStageFlags> waitStages) {
+    buffer.reset();
     buffer.startRecording();
     beginRenderPass();
     pipeline.bind(&buffer);
     //TODO specify dynamic viewport and scissor state
     vkCmdDraw(buffer.getHandle(), 3, 1, 0, 0);
     vkCmdEndRenderPass(buffer.getHandle());
-    
+    buffer.stopRecording();
+    buffer.submit(fence, signalSemaphores, waitSemaphores, waitStages);
 }

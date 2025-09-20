@@ -185,3 +185,7 @@ SwapChainSupportDetails Device::getSwapChainDetails() {
 QueueFamilyIndices Device::getQueueFamilies() {
     return findQueueFamilies(physicalDevice, surface);
 }
+
+void Device::waitIdle() {
+    vkDeviceWaitIdle(device);
+}

@@ -20,7 +20,7 @@ private:
 public:
     BasicRenderer(Device* device, SwapChain* swapchain);
     ~BasicRenderer();
-    void render();
+    void render(Fence* fence, std::vector<Semaphore*> signalSemaphores = {}, std::vector<Semaphore*> waitSemaphores = {}, std::vector<VkPipelineStageFlags> waitStages = {});
 private:
     void beginRenderPass();
 };

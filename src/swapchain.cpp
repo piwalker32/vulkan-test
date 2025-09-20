@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <iostream>
 #include <limits>
+#include <semaphore.h>
 #include <stdexcept>
 #include <swapchain.h>
 #include <vulkan/vulkan_core.h>
@@ -116,4 +117,27 @@ SwapChain::SwapChain(Device* device, Window* window, Surface* surface) :
 
 SwapChain::~SwapChain() {
     vkDestroySwapchainKHR(device->getDevice(), swapchain, nullptr);
+}
+
+void SwapChain::swap(Semaphore* semaphore) {
+    vkAcquireNextImageKHR(device->getDevice(), swapchain, UINT64_MAX, semaphore != nullptr ? semaphore->getHandle() : VK_NULL_HANDLE, VK_NULL_HANDLE, &imageIndex);
+}
+
+void SwapChain::present(std::vector<Semaphore*> waitSemaphores) {
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    std::vector<VkSemaphore> waitSemaphoreHandles;
+    for(auto semaphore : waitSemaphores) {
+        waitSemaphoreHandles.push_back(semaphore->getHandle());
+    }
+
+    presentInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphoreHandles.size());
+    presentInfo.pWaitSemaphores = waitSemaphoreHandles.data();
+
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &swapchain;
+    presentInfo.pImageIndices = &imageIndex;
+    presentInfo.pResults = nullptr;
+
+    vkQueuePresentKHR(device->getPresentQueue(), &presentInfo);
 }

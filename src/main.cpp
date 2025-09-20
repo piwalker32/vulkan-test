@@ -1,8 +1,11 @@
 #include "basic_renderer.h"
+#include "fence.h"
 #include "pipeline.h"
 #include "surface.h"
 #include "swapchain.h"
 #include <exception>
+#include <semaphore.h>
+#include <vector>
 #include <vulkan/vulkan_core.h>
 #include <instance.h>
 #include <window.h>
@@ -25,6 +28,9 @@ private:
     Device device;
     SwapChain swapchain;
     BasicRenderer renderer;
+    Semaphore imageAvailableSemaphore;
+    Semaphore renderFinishedSemaphore;
+    Fence inFlightFence;
 
 public:
     HelloTriangleApplication() :
@@ -33,7 +39,10 @@ public:
         device(&instance, &surface),
         surface(&instance, &window),
         swapchain(&device, &window, &surface),
-        renderer(&device, &swapchain) {
+        renderer(&device, &swapchain),
+        imageAvailableSemaphore(&device),
+        renderFinishedSemaphore(&device),
+        inFlightFence(&device, true) {
     }
 
     void run() {
@@ -44,9 +53,19 @@ private:
 
     void mainLoop() {
         while(!window.shouldClose()) {
-            
+            drawFrame();
             window.pollEvents();
         }
+        device.waitIdle();
+    }
+
+    void drawFrame() {
+        inFlightFence.wait();
+        inFlightFence.reset();
+        swapchain.swap(&imageAvailableSemaphore);
+        renderer.render(&inFlightFence, std::vector<Semaphore*> {&renderFinishedSemaphore}, 
+            std::vector<Semaphore*> {&imageAvailableSemaphore}, std::vector<VkPipelineStageFlags> {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT});
+        swapchain.present(std::vector<Semaphore*>{&renderFinishedSemaphore});
     }
 };
 
