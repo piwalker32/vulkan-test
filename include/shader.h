@@ -10,4 +10,5 @@ private:
 public:
     Shader(Device* device, const std::string& filename);
     ~Shader();
+    VkShaderModule getShader() { return shaderModule; }
 };

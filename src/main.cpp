@@ -1,3 +1,4 @@
+#include "pipeline.h"
 #include "shader.h"
 #include "surface.h"
 #include "swapchain.h"
@@ -23,6 +24,7 @@ private:
     Surface surface;
     Device device;
     SwapChain swapchain;
+    Pipeline pipeline;
 
 public:
     HelloTriangleApplication() :
@@ -30,8 +32,8 @@ public:
         window(WIDTH, HEIGHT, "Vulkan Test"),
         device(&instance, &surface),
         surface(&instance, &window),
-        swapchain(&device, &window, &surface) {
-        Shader shader(&device, "basic.vert.spv");
+        swapchain(&device, &window, &surface),
+        pipeline(&device, { "basic.frag.spv", "basic.vert.spv" }) {
     }
 
     void run() {
