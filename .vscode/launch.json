@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/build/vulkantest",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/build",
             "environment": [],
             "MIMode": "gdb",
             "setupCommands": [

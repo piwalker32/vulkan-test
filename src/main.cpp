@@ -1,3 +1,4 @@
+#include "shader.h"
 #include "surface.h"
 #include "swapchain.h"
 #include <exception>
@@ -30,6 +31,7 @@ public:
         device(&instance, &surface),
         surface(&instance, &window),
         swapchain(&device, &window, &surface) {
+        Shader shader(&device, "basic.vert.spv");
     }
 
     void run() {
