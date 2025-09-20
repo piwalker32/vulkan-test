@@ -29,7 +29,7 @@ private:
     SwapChain swapchain;
     BasicRenderer renderer;
     Semaphore imageAvailableSemaphore;
-    Semaphore renderFinishedSemaphore;
+    std::vector<Semaphore> renderFinishedSemaphores;
     Fence inFlightFence;
 
 public:
@@ -41,8 +41,11 @@ public:
         swapchain(&device, &window, &surface),
         renderer(&device, &swapchain),
         imageAvailableSemaphore(&device),
-        renderFinishedSemaphore(&device),
         inFlightFence(&device, true) {
+        renderFinishedSemaphores.reserve(swapchain.getImageCount());
+        for(int i = 0; i < swapchain.getImageCount(); i++) {
+            renderFinishedSemaphores.emplace_back(&device);
+        }
     }
 
     void run() {
@@ -63,9 +66,10 @@ private:
         inFlightFence.wait();
         inFlightFence.reset();
         swapchain.swap(&imageAvailableSemaphore);
-        renderer.render(&inFlightFence, std::vector<Semaphore*> {&renderFinishedSemaphore}, 
+        uint32_t imageIndex = swapchain.getImageIndex();
+        renderer.render(&inFlightFence, std::vector<Semaphore*> {&renderFinishedSemaphores[imageIndex]}, 
             std::vector<Semaphore*> {&imageAvailableSemaphore}, std::vector<VkPipelineStageFlags> {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT});
-        swapchain.present(std::vector<Semaphore*>{&renderFinishedSemaphore});
+        swapchain.present(std::vector<Semaphore*>{&renderFinishedSemaphores[imageIndex]});
     }
 };
 
