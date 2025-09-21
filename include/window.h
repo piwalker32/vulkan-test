@@ -4,6 +4,7 @@
 class Window {
 private:
     GLFWwindow* window;
+    bool resized = false;
 public:
     Window(uint32_t width, uint32_t height, const char* title, bool resizable = true);
     ~Window();
@@ -12,4 +13,7 @@ public:
     GLFWwindow* getWindow() { return window; }
     int getFramebufferWidth();
     int getFramebufferHeight();
+    bool getResizedFlag() { return resized; }
+    void resetResizedFlag() { resized = false; }
+    void setResizedFlag() { resized = true; }
 };

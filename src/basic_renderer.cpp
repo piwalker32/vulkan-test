@@ -3,6 +3,7 @@
 #include "imageview.h"
 #include "pipeline.h"
 #include <basic_renderer.h>
+#include <ratio>
 #include <stdexcept>
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -66,10 +67,7 @@ BasicRenderer::BasicRenderer(Device* device, SwapChain* swapchain)
     :device(device), swapchain(swapchain), renderPass(createRenderPass(device, swapchain)), pipeline(device, shaders, swapchain, renderPass),
     pool(device, device->getQueueFamilies().graphicsFamily.value()) {
     
-    framebuffers.reserve(swapchain->getImageCount());
-    for(size_t i = 0; i < swapchain->getImageCount(); i++) {
-        framebuffers.emplace_back(device, renderPass, swapchain->getSwapChainExtent(), std::vector<VkImageView>{ swapchain->getImageView(i)->getImageView() });
-    }
+    createFramebuffers();
 
     buffers.reserve(MAX_FRAMES_IN_FLIGHT);
     for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -79,6 +77,17 @@ BasicRenderer::BasicRenderer(Device* device, SwapChain* swapchain)
 
 BasicRenderer::~BasicRenderer() {
     vkDestroyRenderPass(device->getDevice(), renderPass, nullptr);
+}
+
+void BasicRenderer::destroyFramebuffers() {
+    framebuffers.clear();
+}
+
+void BasicRenderer::createFramebuffers() {
+    framebuffers.reserve(swapchain->getImageCount());
+    for(size_t i = 0; i < swapchain->getImageCount(); i++) {
+        framebuffers.emplace_back(device, renderPass, swapchain->getSwapChainExtent(), std::vector<VkImageView>{ swapchain->getImageView(i)->getImageView() });
+    }
 }
 
 void BasicRenderer::beginRenderPass(size_t frame) {
@@ -101,7 +110,21 @@ void BasicRenderer::render(size_t frame, Fence* fence, std::vector<Semaphore*> s
     buffers[frame].startRecording();
     beginRenderPass(frame);
     pipeline.bind(&buffers[frame]);
-    //TODO specify dynamic viewport and scissor state
+    
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = swapchain->getSwapChainExtent().width;
+    viewport.height = swapchain->getSwapChainExtent().height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(buffers[frame].getHandle(), 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = swapchain->getSwapChainExtent();
+    vkCmdSetScissor(buffers[frame].getHandle(), 0, 1, &scissor);
+
     vkCmdDraw(buffers[frame].getHandle(), 3, 1, 0, 0);
     vkCmdEndRenderPass(buffers[frame].getHandle());
     buffers[frame].stopRecording();

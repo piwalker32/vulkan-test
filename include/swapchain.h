@@ -22,11 +22,15 @@ private:
 public:
     SwapChain(Device* device, Window* window, Surface* surface);
     ~SwapChain();
-    void swap(Semaphore* semaphore = nullptr);
-    void present(std::vector<Semaphore*> waitSemaphores = {});
+    void recreateSwapchain();
+    bool swap(Semaphore* semaphore = nullptr);
+    bool present(std::vector<Semaphore*> waitSemaphores = {});
     uint32_t getImageIndex() { return imageIndex; }
     VkExtent2D getSwapChainExtent() { return swapchainImageExtent; }
     VkFormat getSwapChainFormat() { return swapchainImageFormat; }
     size_t getImageCount() { return imageViews.size(); }
     ImageView* getImageView(size_t index) { return &imageViews[index]; }
+private:
+    void deleteSwapchain();
+    void initSwapchain();
 };

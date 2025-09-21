@@ -70,14 +70,27 @@ private:
 
     void drawFrame() {
         inFlightFences[currentFrame].wait();
+        if(!swapchain.swap(&imageAvailableSemaphores[currentFrame])){
+            resize();
+            return;
+        }
         inFlightFences[currentFrame].reset();
-        swapchain.swap(&imageAvailableSemaphores[currentFrame]);
         uint32_t imageIndex = swapchain.getImageIndex();
         renderer.render(currentFrame, &inFlightFences[currentFrame], std::vector<Semaphore*> {&renderFinishedSemaphores[imageIndex]}, 
             std::vector<Semaphore*> {&imageAvailableSemaphores[currentFrame]}, std::vector<VkPipelineStageFlags> {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT});
-        swapchain.present(std::vector<Semaphore*>{&renderFinishedSemaphores[imageIndex]});
+        if(!swapchain.present(std::vector<Semaphore*>{&renderFinishedSemaphores[imageIndex]}) || window.getResizedFlag()) {
+            resize();
+        }
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    }
+
+    void resize() {
+        device.waitIdle();
+        renderer.destroyFramebuffers();
+        swapchain.recreateSwapchain();
+        renderer.createFramebuffers();
+        window.resetResizedFlag();
     }
 };
 

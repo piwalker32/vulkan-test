@@ -1,5 +1,6 @@
 #include "shader.h"
 #include "swapchain.h"
+#include <cstdint>
 #include <iostream>
 #include <pipeline.h>
 #include <sstream>
@@ -58,27 +59,11 @@ Pipeline::Pipeline(Device* device, const std::vector<const char*> shaderFiles, S
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-    //Viewport, what part of the framebuffer do we want to render to
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float) swapchain->getSwapChainExtent().width;
-    viewport.height = (float) swapchain->getSwapChainExtent().height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-
-    //Scissor, crop the rendered image
-    VkRect2D scissor{};
-    scissor.offset = {0, 0};
-    scissor.extent = swapchain->getSwapChainExtent();
-
     //creating static viewport and scissor for now, may make dynamic in future
     VkPipelineViewportStateCreateInfo viewportState{};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     viewportState.viewportCount = 1;
-    viewportState.pViewports = &viewport;
     viewportState.scissorCount = 1;
-    viewportState.pScissors = &scissor;
 
     //Rasterizer setup
     VkPipelineRasterizationStateCreateInfo rasterizer{};
@@ -137,6 +122,16 @@ Pipeline::Pipeline(Device* device, const std::vector<const char*> shaderFiles, S
         throw std::runtime_error("FAILED TO CREATE PIPELINE LAYOUT");
     }
 
+    VkPipelineDynamicStateCreateInfo dynamicState{};
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    std::vector<VkDynamicState> dynamicStates = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+
+    dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+    dynamicState.pDynamicStates = dynamicStates.data();
+
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.stageCount = static_cast<uint32_t>(shaderStageCreateInfos.size());
@@ -148,7 +143,7 @@ Pipeline::Pipeline(Device* device, const std::vector<const char*> shaderFiles, S
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pDepthStencilState = nullptr; //will address later
     pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.pDynamicState = nullptr; //will address later
+    pipelineInfo.pDynamicState = &dynamicState;
 
     pipelineInfo.layout = layout;
     pipelineInfo.renderPass = renderPass;

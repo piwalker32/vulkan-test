@@ -21,6 +21,8 @@ public:
     BasicRenderer(Device* device, SwapChain* swapchain);
     ~BasicRenderer();
     void render(size_t frame, Fence* fence, std::vector<Semaphore*> signalSemaphores = {}, std::vector<Semaphore*> waitSemaphores = {}, std::vector<VkPipelineStageFlags> waitStages = {});
+    void destroyFramebuffers();
+    void createFramebuffers();
 private:
     void beginRenderPass(size_t frame);
 };

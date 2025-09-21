@@ -37,6 +37,12 @@ VkExtent2D choseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, Window*
         int width = window->getFramebufferWidth();
         int height = window->getFramebufferHeight();
 
+        while (width == 0 || height == 0) {
+            int width = window->getFramebufferWidth();
+            int height = window->getFramebufferHeight();
+            window->pollEvents();
+        }
+
         VkExtent2D actualExtent = {
             static_cast<uint32_t>(width),
             static_cast<uint32_t>(height)
@@ -50,6 +56,27 @@ VkExtent2D choseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, Window*
 
 SwapChain::SwapChain(Device* device, Window* window, Surface* surface) :
     device(device), window(window), surface(surface) {
+    initSwapchain();
+}
+
+SwapChain::~SwapChain() {
+    deleteSwapchain();
+}
+
+void SwapChain::recreateSwapchain() {
+    deleteSwapchain();
+    initSwapchain();
+}
+
+void SwapChain::deleteSwapchain() {
+    vkDestroySwapchainKHR(device->getDevice(), swapchain, nullptr);
+    swapChainImages.clear();
+    imageViews.clear();
+    std::cout << "swapchain destroyed" << std::endl;
+}
+
+void SwapChain::initSwapchain() {
+    std::cout << "creating new swapchain" << std::endl;
     SwapChainSupportDetails swapChainSupport = device->getSwapChainDetails();
 
     VkSurfaceFormatKHR surfaceFormat = choseSwapSurfaceFormat(swapChainSupport.formats);
@@ -115,15 +142,17 @@ SwapChain::SwapChain(Device* device, Window* window, Surface* surface) :
     std::cout << "Created swapchain imageViews" << std::endl;
 }
 
-SwapChain::~SwapChain() {
-    vkDestroySwapchainKHR(device->getDevice(), swapchain, nullptr);
+bool SwapChain::swap(Semaphore* semaphore) {
+    VkResult result = vkAcquireNextImageKHR(device->getDevice(), swapchain, UINT64_MAX, semaphore != nullptr ? semaphore->getHandle() : VK_NULL_HANDLE, VK_NULL_HANDLE, &imageIndex);
+    if(result == VK_ERROR_OUT_OF_DATE_KHR) {
+        return false;
+    } else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        throw std::runtime_error("Failed to aquire swapchain image");
+    }
+    return true;
 }
 
-void SwapChain::swap(Semaphore* semaphore) {
-    vkAcquireNextImageKHR(device->getDevice(), swapchain, UINT64_MAX, semaphore != nullptr ? semaphore->getHandle() : VK_NULL_HANDLE, VK_NULL_HANDLE, &imageIndex);
-}
-
-void SwapChain::present(std::vector<Semaphore*> waitSemaphores) {
+bool SwapChain::present(std::vector<Semaphore*> waitSemaphores) {
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     std::vector<VkSemaphore> waitSemaphoreHandles;
@@ -139,5 +168,12 @@ void SwapChain::present(std::vector<Semaphore*> waitSemaphores) {
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr;
 
-    vkQueuePresentKHR(device->getPresentQueue(), &presentInfo);
+    VkResult result = vkQueuePresentKHR(device->getPresentQueue(), &presentInfo);
+    if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        return false;
+    } else if(result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to present swapchain image");
+    }
+
+    return true;
 }

@@ -2,6 +2,10 @@
 #include <window.h>
 #include <iostream>
 
+static void framebufferResizedCallback(GLFWwindow* window, int width, int height) {
+    ((Window*)glfwGetWindowUserPointer(window))->setResizedFlag();
+}
+
 Window::Window(uint32_t width, uint32_t height, const char* title, bool resizable) {
     if(glfwInit() != GLFW_TRUE) {
         throw std::runtime_error("FAILED TO INIT GLFW!");
@@ -13,6 +17,8 @@ Window::Window(uint32_t width, uint32_t height, const char* title, bool resizabl
     glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
 
     window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+    glfwSetWindowUserPointer(window, this);
+    glfwSetFramebufferSizeCallback(window, framebufferResizedCallback);
 
     if(window == NULL) {
         throw std::runtime_error("FAILED TO CREATE GLFW WINDOW!");
