@@ -3,6 +3,7 @@
 #include "buffer.h"
 #include "commandbuffer.h"
 #include "commandpool.h"
+#include "descriptorpool.h"
 #include "device.h"
 #include "framebuffer.h"
 #include "pipeline.h"
@@ -20,6 +21,10 @@ private:
     std::vector<CommandBuffer> buffers;
     Buffer vertexBuffer;
     Buffer indexBuffer;
+    std::vector<Buffer> uniformBuffers;
+    std::vector<void*> uniformBuffersMapped;
+    DescriptorPool descriptorPool;
+    std::vector<VkDescriptorSet> descriptorSets;
 public:
     BasicRenderer(Device* device, SwapChain* swapchain);
     ~BasicRenderer();
@@ -28,4 +33,5 @@ public:
     void createFramebuffers();
 private:
     void beginRenderPass(size_t frame);
+    void updateUniformBuffer(uint32_t currentImage);
 };

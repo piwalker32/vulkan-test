@@ -78,7 +78,7 @@ Pipeline::Pipeline(Device* device, const std::vector<const char*> shaderFiles, S
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL; // how do we want polygons to render, fill, or wireframe?
     rasterizer.lineWidth = 1.0f; // sets thickness of lines, any higher than 1.0 requries gpu feature
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT; // cull the back face
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE; // front face is when verts are defined clockwise
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // front face is when verts are defined clockwise
     rasterizer.depthBiasEnable = VK_FALSE; // can alther depth values in some way
     rasterizer.depthBiasConstantFactor = 0.0f;
     rasterizer.depthBiasClamp = 0.0f;
@@ -115,11 +115,27 @@ Pipeline::Pipeline(Device* device, const std::vector<const char*> shaderFiles, S
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
 
-    //pipeline layout, this defines all uniforms required by pipeline shaders. disabled for now will come back to this later
+    //pipeline layout, this defines all uniforms required by pipeline shaders.
+    VkDescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    uboLayoutBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uboLayoutBinding;
+
+    if(vkCreateDescriptorSetLayout(device->getDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+        throw std::runtime_error("FAILED TO CREATE DESCRIPTOR SET LAYOUT");
+    }
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pSetLayouts = nullptr;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -169,6 +185,7 @@ Pipeline::~Pipeline() {
 
     vkDestroyPipeline(device->getDevice(), pipeline, nullptr);
     vkDestroyPipelineLayout(device->getDevice(), layout, nullptr);
+    vkDestroyDescriptorSetLayout(device->getDevice(), descriptorSetLayout, nullptr);
 
 }
 

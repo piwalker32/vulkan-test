@@ -11,8 +11,11 @@ private:
     Device* device;
     VkPipelineLayout layout;
     VkRenderPass renderPass;
+    VkDescriptorSetLayout descriptorSetLayout;
 public:
     Pipeline(Device* device, const std::vector<const char*> shaderFiles, SwapChain* swapchain, VkRenderPass renderPass);
     ~Pipeline();
+    VkDescriptorSetLayout getDescriptorSetLayout() { return descriptorSetLayout; }
+    VkPipelineLayout getPipelineLayout() { return layout; }
     void bind(CommandBuffer* buffer);
 };

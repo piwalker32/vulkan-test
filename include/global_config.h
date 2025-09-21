@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <glm/ext/matrix_float4x4.hpp>
 #include <glm/glm.hpp>
 #include <vulkan/vulkan_core.h>
 
@@ -35,4 +36,10 @@ struct Vertex {
 
         return attributeDescriptions;
     }
+};
+
+struct UniformBufferObject {
+    alignas(16) glm::mat4 model;
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 proj;
 };

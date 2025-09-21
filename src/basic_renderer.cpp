@@ -1,3 +1,11 @@
+#include "descriptorpool.h"
+#include "swapchain.h"
+#include <chrono>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/vector_float3.hpp>
+#include <glm/trigonometric.hpp>
+#define GLM_FORCE_RADIANS
 #include "buffer.h"
 #include "commandbuffer.h"
 #include "global_config.h"
@@ -11,6 +19,7 @@
 #include <stdexcept>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include <glm/gtc/matrix_transform.hpp>
 
 const std::vector<const char*> shaders = {
     "basic.vert.spv",
@@ -82,13 +91,50 @@ BasicRenderer::BasicRenderer(Device* device, SwapChain* swapchain)
     :device(device), swapchain(swapchain), renderPass(createRenderPass(device, swapchain)), pipeline(device, shaders, swapchain, renderPass),
     pool(device, device->getQueueFamilies().graphicsFamily.value()), 
     vertexBuffer(device, sizeof(Vertex) * verticies.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
-    indexBuffer(device, sizeof(uint16_t) * indicies.size(), VK_BUFFER_USAGE_2_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+    indexBuffer(device, sizeof(uint16_t) * indicies.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
+    descriptorPool(device, MAX_FRAMES_IN_FLIGHT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
     
     createFramebuffers();
 
+    std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, pipeline.getDescriptorSetLayout());
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = descriptorPool.getHandle();
+    allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+    allocInfo.pSetLayouts = layouts.data();
+
+    descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+    if(vkAllocateDescriptorSets(device->getDevice(), &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
+        throw std::runtime_error("FAILED TO ALLOCATE DESCRIPTOR SETS");
+    }
+
     buffers.reserve(MAX_FRAMES_IN_FLIGHT);
+    uniformBuffers.reserve(MAX_FRAMES_IN_FLIGHT);
+    uniformBuffersMapped.reserve(MAX_FRAMES_IN_FLIGHT);
     for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         buffers.emplace_back(device, &pool);
+        uniformBuffers.emplace_back(device, sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        uniformBuffersMapped.push_back(uniformBuffers[i].mapBuffer());
+
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = uniformBuffers[i].getHandle();
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(UniformBufferObject);
+
+        VkWriteDescriptorSet descriptorWrite{};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = descriptorSets[i];
+        descriptorWrite.dstBinding = 0;
+        descriptorWrite.dstArrayElement = 0;
+
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrite.descriptorCount = 1;
+
+        descriptorWrite.pBufferInfo = &bufferInfo;
+        descriptorWrite.pImageInfo = nullptr;
+        descriptorWrite.pTexelBufferView = nullptr;
+
+        vkUpdateDescriptorSets(device->getDevice(), 1, &descriptorWrite, 0, nullptr);
     }
 
     {
@@ -150,7 +196,26 @@ void BasicRenderer::beginRenderPass(size_t frame) {
     vkCmdBeginRenderPass(buffers[frame].getHandle(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
+void BasicRenderer::updateUniformBuffer(uint32_t currentImage) {
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+    UniformBufferObject ubo{};
+    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    ubo.proj = glm::perspective(glm::radians(45.0f), swapchain->getSwapChainExtent().width / (float) swapchain->getSwapChainExtent().height, 0.1f, 10.0f);
+
+    ubo.proj[1][1] *= -1;
+
+    memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+}
+
 void BasicRenderer::render(size_t frame, Fence* fence, std::vector<Semaphore*> signalSemaphores, std::vector<Semaphore*> waitSemaphores, std::vector<VkPipelineStageFlags> waitStages) {
+    updateUniformBuffer(frame);
     buffers[frame].reset();
     buffers[frame].startRecording();
     beginRenderPass(frame);
@@ -172,6 +237,7 @@ void BasicRenderer::render(size_t frame, Fence* fence, std::vector<Semaphore*> s
     scissor.extent = swapchain->getSwapChainExtent();
     vkCmdSetScissor(buffers[frame].getHandle(), 0, 1, &scissor);
 
+    vkCmdBindDescriptorSets(buffers[frame].getHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipelineLayout(), 0, 1, &descriptorSets[frame], 0, nullptr);
     vkCmdDrawIndexed(buffers[frame].getHandle(), static_cast<uint32_t>(indicies.size()), 1, 0, 0, 0);
     vkCmdEndRenderPass(buffers[frame].getHandle());
     buffers[frame].stopRecording();
