@@ -7,6 +7,7 @@
 #include "device.h"
 #include "framebuffer.h"
 #include "pipeline.h"
+#include "sampler.h"
 #include "swapchain.h"
 #include "texture.h"
 #include <vector>
@@ -27,6 +28,7 @@ private:
     DescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
     Texture texture;
+    Sampler sampler;
 public:
     BasicRenderer(Device* device, SwapChain* swapchain);
     ~BasicRenderer();

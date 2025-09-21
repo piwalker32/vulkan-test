@@ -1,5 +1,6 @@
 #include "descriptorpool.h"
 #include "image.h"
+#include "sampler.h"
 #include "swapchain.h"
 #include "texture.h"
 #include <array>
@@ -96,7 +97,7 @@ BasicRenderer::BasicRenderer(Device* device, SwapChain* swapchain)
     vertexBuffer(device, sizeof(Vertex) * verticies.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
     indexBuffer(device, sizeof(uint16_t) * indicies.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
     descriptorPool(device, std::vector<uint32_t>(2, MAX_FRAMES_IN_FLIGHT), std::vector<VkDescriptorType>{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER}),
-    texture(device, "res/texture/statue.jpg") {
+    texture(device, "res/texture/statue.jpg"), sampler(device) {
     
     createFramebuffers();
 
@@ -128,7 +129,7 @@ BasicRenderer::BasicRenderer(Device* device, SwapChain* swapchain)
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         imageInfo.imageView = texture.getImageView();
-        imageInfo.sampler = texture.getSampler();
+        imageInfo.sampler = sampler.getHandle();
 
         std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
