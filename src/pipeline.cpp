@@ -1,3 +1,4 @@
+#include "global_config.h"
 #include "shader.h"
 #include "swapchain.h"
 #include <cstdint>
@@ -48,10 +49,14 @@ Pipeline::Pipeline(Device* device, const std::vector<const char*> shaderFiles, S
     //Vertex input, empty for now since verticies are hard coded into the shader
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
-    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+
+    auto bindingDescription = Vertex::getBindingDescription();
+    auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
     //Input Assembly, what types of primitives do we want to draw
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};

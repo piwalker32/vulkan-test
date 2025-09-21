@@ -1,8 +1,12 @@
+#include "buffer.h"
 #include "commandbuffer.h"
 #include "global_config.h"
 #include "imageview.h"
 #include "pipeline.h"
 #include <basic_renderer.h>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <ratio>
 #include <stdexcept>
 #include <vector>
@@ -11,6 +15,12 @@
 const std::vector<const char*> shaders = {
     "basic.vert.spv",
     "basic.frag.spv"
+};
+
+const std::vector<Vertex> verticies = {
+    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
 };
 
 static VkRenderPass createRenderPass(Device* device, SwapChain* swapchain) {
@@ -65,7 +75,8 @@ static VkRenderPass createRenderPass(Device* device, SwapChain* swapchain) {
 
 BasicRenderer::BasicRenderer(Device* device, SwapChain* swapchain)
     :device(device), swapchain(swapchain), renderPass(createRenderPass(device, swapchain)), pipeline(device, shaders, swapchain, renderPass),
-    pool(device, device->getQueueFamilies().graphicsFamily.value()) {
+    pool(device, device->getQueueFamilies().graphicsFamily.value()), 
+    vertexBuffer(device, sizeof(Vertex) * verticies.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {
     
     createFramebuffers();
 
@@ -73,6 +84,10 @@ BasicRenderer::BasicRenderer(Device* device, SwapChain* swapchain)
     for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         buffers.emplace_back(device, &pool);
     }
+
+    void* data = vertexBuffer.mapBuffer();
+    memcpy(data, verticies.data(), sizeof(Vertex) * verticies.size());
+    vertexBuffer.unmapBuffer();
 }
 
 BasicRenderer::~BasicRenderer() {
@@ -110,6 +125,7 @@ void BasicRenderer::render(size_t frame, Fence* fence, std::vector<Semaphore*> s
     buffers[frame].startRecording();
     beginRenderPass(frame);
     pipeline.bind(&buffers[frame]);
+    vertexBuffer.bindVertex(&buffers[frame]);
     
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -125,7 +141,7 @@ void BasicRenderer::render(size_t frame, Fence* fence, std::vector<Semaphore*> s
     scissor.extent = swapchain->getSwapChainExtent();
     vkCmdSetScissor(buffers[frame].getHandle(), 0, 1, &scissor);
 
-    vkCmdDraw(buffers[frame].getHandle(), 3, 1, 0, 0);
+    vkCmdDraw(buffers[frame].getHandle(), static_cast<uint32_t>(verticies.size()), 1, 0, 0);
     vkCmdEndRenderPass(buffers[frame].getHandle());
     buffers[frame].stopRecording();
     buffers[frame].submit(fence, signalSemaphores, waitSemaphores, waitStages);

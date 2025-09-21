@@ -45,6 +45,7 @@ public:
     VkQueue getGraphicsQueue() { return graphicsQueue; }
     VkQueue getPresentQueue() { return presentQueue; }
     VkDevice getDevice() { return device; }
+    VkPhysicalDevice getPhysicalDevices() { return physicalDevice; }
     SwapChainSupportDetails getSwapChainDetails();
     QueueFamilyIndices getQueueFamilies();
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "buffer.h"
 #include "commandbuffer.h"
 #include "commandpool.h"
 #include "device.h"
@@ -17,6 +18,7 @@ private:
     std::vector<Framebuffer> framebuffers;
     CommandPool pool;
     std::vector<CommandBuffer> buffers;
+    Buffer vertexBuffer;
 public:
     BasicRenderer(Device* device, SwapChain* swapchain);
     ~BasicRenderer();
