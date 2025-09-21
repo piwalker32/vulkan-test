@@ -1,5 +1,4 @@
 #include "descriptorpool.h"
-#include "image.h"
 #include "sampler.h"
 #include "swapchain.h"
 #include "texture.h"
@@ -11,7 +10,6 @@
 #include <glm/trigonometric.hpp>
 #define GLM_FORCE_RADIANS
 #include "buffer.h"
-#include "commandbuffer.h"
 #include "global_config.h"
 #include "imageview.h"
 #include "pipeline.h"
@@ -19,7 +17,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <ratio>
 #include <stdexcept>
 #include <vector>
 #include <vulkan/vulkan_core.h>

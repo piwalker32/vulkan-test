@@ -1,9 +1,7 @@
 #include "buffer.h"
 #include "image.h"
 #include "imageview.h"
-#include "memory_util.h"
 #include <cstddef>
-#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <stdexcept>
