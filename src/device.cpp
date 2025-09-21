@@ -83,11 +83,13 @@ bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
 bool isDeviceSuitable(VkPhysicalDevice device, Surface* surface) {
     QueueFamilyIndices indices = findQueueFamilies(device, surface);
     bool swapchainAdequate = false;
+    VkPhysicalDeviceFeatures supportedFeatures;
+    vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
     if(checkDeviceExtensionSupport(device)) {
         SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, surface);
         swapchainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
-    return (indices.isComplete() || (indices.noPresent() && surface == nullptr)) && checkDeviceExtensionSupport(device) && swapchainAdequate;
+    return (indices.isComplete() || (indices.noPresent() && surface == nullptr)) && checkDeviceExtensionSupport(device) && swapchainAdequate && supportedFeatures.samplerAnisotropy;
 }
 
 VkPhysicalDevice pickPhysicalDevice(Instance* instance, Surface* surface) {
@@ -145,6 +147,7 @@ Device::Device(Instance* instance,  Surface* surface) :
     }
 
     VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

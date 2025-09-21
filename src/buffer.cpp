@@ -1,21 +1,9 @@
 #include "commandbuffer.h"
 #include "commandpool.h"
+#include "memory_util.h"
 #include <buffer.h>
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
-
-uint32_t findMemoryType(Device* device, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(device->getPhysicalDevices(), &memProperties);
-
-    for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("FAILED TO FIND SUITABLE MEMORY TYPE FOR BUFFER");
-}
 
 void Buffer::copyBuffer(Device* device, Buffer* src, Buffer* dst, VkDeviceSize size) {
     CommandPool pool(device, device->getQueueFamilies().graphicsFamily.value());

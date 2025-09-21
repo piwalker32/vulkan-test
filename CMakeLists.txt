@@ -8,7 +8,7 @@ target_compile_definitions(vulkantest PRIVATE
         NDEBUG=1
     >
 )
-target_include_directories(vulkantest PRIVATE include/)
+target_include_directories(vulkantest PRIVATE include/ deps/)
 add_custom_command(TARGET vulkantest POST_BUILD COMMAND ${CMAKE_COMMAND} ARGS -E rm -rf ${CMAKE_BINARY_DIR}/res)
 add_custom_command(TARGET vulkantest POST_BUILD COMMAND ${CMAKE_COMMAND} ARGS -E copy_directory ${CMAKE_SOURCE_DIR}/res/ ${CMAKE_BINARY_DIR}/res)
 #FILE(COPY ${Resources} DESTINATION ${CMAKE_BINARY_DIR}/res)

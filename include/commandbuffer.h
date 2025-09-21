@@ -9,9 +9,11 @@
 class CommandBuffer {
 private:
     VkCommandBuffer buffer;
+    CommandPool* pool;
     Device* device;
 public:
     CommandBuffer(Device* device, CommandPool* pool);
+    ~CommandBuffer();
     void startRecording();
     void stopRecording();
     void reset();

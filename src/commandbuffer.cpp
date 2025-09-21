@@ -7,7 +7,7 @@
 #include <vulkan/vulkan_core.h>
 
 CommandBuffer::CommandBuffer(Device* device, CommandPool* pool) :
-    device(device) {
+    device(device), pool(pool) {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = pool->getHandle();
@@ -17,6 +17,10 @@ CommandBuffer::CommandBuffer(Device* device, CommandPool* pool) :
     if (vkAllocateCommandBuffers(device->getDevice(), &allocInfo, &buffer) != VK_SUCCESS) {
         throw std::runtime_error("FAILED TO ALLOCATE COMMAND BUFFER");
     }
+}
+
+CommandBuffer::~CommandBuffer() {
+    vkFreeCommandBuffers(device->getDevice(), pool->getHandle(), 1, &buffer);
 }
 
 void CommandBuffer::startRecording() {

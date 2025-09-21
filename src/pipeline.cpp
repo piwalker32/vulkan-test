@@ -1,6 +1,7 @@
 #include "global_config.h"
 #include "shader.h"
 #include "swapchain.h"
+#include <array>
 #include <cstdint>
 #include <iostream>
 #include <pipeline.h>
@@ -123,10 +124,19 @@ Pipeline::Pipeline(Device* device, const std::vector<const char*> shaderFiles, S
     uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     uboLayoutBinding.pImmutableSamplers = nullptr;
 
+    VkDescriptorSetLayoutBinding samplerLaoutBinding{};
+    samplerLaoutBinding.binding = 1;
+    samplerLaoutBinding.descriptorCount = 1;
+    samplerLaoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerLaoutBinding.pImmutableSamplers = nullptr;
+    samplerLaoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLaoutBinding};
+
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &uboLayoutBinding;
+    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+    layoutInfo.pBindings = bindings.data();
 
     if(vkCreateDescriptorSetLayout(device->getDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("FAILED TO CREATE DESCRIPTOR SET LAYOUT");

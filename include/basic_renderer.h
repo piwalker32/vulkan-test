@@ -8,6 +8,7 @@
 #include "framebuffer.h"
 #include "pipeline.h"
 #include "swapchain.h"
+#include "texture.h"
 #include <vector>
 #include <vulkan/vulkan_core.h>
 class BasicRenderer {
@@ -25,6 +26,7 @@ private:
     std::vector<void*> uniformBuffersMapped;
     DescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
+    Texture texture;
 public:
     BasicRenderer(Device* device, SwapChain* swapchain);
     ~BasicRenderer();
