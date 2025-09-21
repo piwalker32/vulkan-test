@@ -40,7 +40,7 @@ void CommandBuffer::reset() {
     vkResetCommandBuffer(buffer, 0);
 }
 
-void CommandBuffer::submit(Fence* fence, std::vector<Semaphore*> signalSemaphores, std::vector<Semaphore*> waitSemaphores, std::vector<VkPipelineStageFlags> waitStages) {
+void CommandBuffer::submit(VkQueue queue, Fence* fence, std::vector<Semaphore*> signalSemaphores, std::vector<Semaphore*> waitSemaphores, std::vector<VkPipelineStageFlags> waitStages) {
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     std::vector<VkSemaphore> waitSemaphoreHandles;
@@ -61,7 +61,7 @@ void CommandBuffer::submit(Fence* fence, std::vector<Semaphore*> signalSemaphore
     submitInfo.signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size());
     submitInfo.pSignalSemaphores = signalSemaphoreHandles.data();
 
-    if(vkQueueSubmit(device->getGraphicsQueue(), 1, &submitInfo, fence->getHandle()) != VK_SUCCESS) {
+    if(vkQueueSubmit(device->getGraphicsQueue(), 1, &submitInfo, fence != nullptr ? fence->getHandle() : VK_NULL_HANDLE) != VK_SUCCESS) {
         std::runtime_error("FAILED TO SUBMIT COMMAND BUFFER");
     }
 

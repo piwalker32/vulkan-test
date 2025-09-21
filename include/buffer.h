@@ -16,6 +16,9 @@ public:
     void* mapBuffer();
     void unmapBuffer();
     void bindVertex(CommandBuffer* cmdBuffer);
+    void bindIndex(CommandBuffer* cmdBuffer);
     VkBuffer getHandle() { return buffer; }
     uint64_t getSize() { return size; }
+
+    static void copyBuffer(Device* device, Buffer* src, Buffer* dst, VkDeviceSize size);
 };

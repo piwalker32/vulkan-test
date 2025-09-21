@@ -1,4 +1,5 @@
 #include "commandbuffer.h"
+#include "commandpool.h"
 #include <buffer.h>
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
@@ -14,6 +15,20 @@ uint32_t findMemoryType(Device* device, uint32_t typeFilter, VkMemoryPropertyFla
     }
 
     throw std::runtime_error("FAILED TO FIND SUITABLE MEMORY TYPE FOR BUFFER");
+}
+
+void Buffer::copyBuffer(Device* device, Buffer* src, Buffer* dst, VkDeviceSize size) {
+    CommandPool pool(device, device->getQueueFamilies().graphicsFamily.value());
+    CommandBuffer cmdBuffer(device, &pool);
+    cmdBuffer.startRecording();
+    VkBufferCopy copyRegion{};
+    copyRegion.srcOffset = 0;
+    copyRegion.dstOffset = 0;
+    copyRegion.size = size;
+    vkCmdCopyBuffer(cmdBuffer.getHandle(), src->getHandle(), dst->getHandle(), 1, &copyRegion);
+    cmdBuffer.stopRecording();
+    cmdBuffer.submit(device->getGraphicsQueue());
+    vkQueueWaitIdle(device->getGraphicsQueue());
 }
 
 Buffer::Buffer(Device* device, uint64_t size, VkBufferUsageFlags usage, VkSharingMode sharingMode, VkMemoryPropertyFlags memoryProperties) :
@@ -62,4 +77,8 @@ void Buffer::unmapBuffer() {
 void Buffer::bindVertex(CommandBuffer* cmdBuffer) {
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(cmdBuffer->getHandle(), 0, 1, &buffer, offsets);
+}
+
+void Buffer::bindIndex(CommandBuffer* cmdBuffer) {
+    vkCmdBindIndexBuffer(cmdBuffer->getHandle(), buffer, 0, VK_INDEX_TYPE_UINT16);
 }

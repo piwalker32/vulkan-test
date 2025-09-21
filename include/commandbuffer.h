@@ -15,6 +15,6 @@ public:
     void startRecording();
     void stopRecording();
     void reset();
-    void submit(Fence* fence, std::vector<Semaphore*> signalSemaphores = {}, std::vector<Semaphore*> waitSemaphores = {}, std::vector<VkPipelineStageFlags> waitStages = {});
+    void submit(VkQueue queue, Fence* fence = nullptr, std::vector<Semaphore*> signalSemaphores = {}, std::vector<Semaphore*> waitSemaphores = {}, std::vector<VkPipelineStageFlags> waitStages = {});
     VkCommandBuffer getHandle() { return buffer; }
 };

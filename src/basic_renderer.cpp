@@ -18,9 +18,14 @@ const std::vector<const char*> shaders = {
 };
 
 const std::vector<Vertex> verticies = {
-    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+
+const std::vector<uint16_t> indicies = {
+    0, 1, 2, 2, 3, 0
 };
 
 static VkRenderPass createRenderPass(Device* device, SwapChain* swapchain) {
@@ -76,7 +81,8 @@ static VkRenderPass createRenderPass(Device* device, SwapChain* swapchain) {
 BasicRenderer::BasicRenderer(Device* device, SwapChain* swapchain)
     :device(device), swapchain(swapchain), renderPass(createRenderPass(device, swapchain)), pipeline(device, shaders, swapchain, renderPass),
     pool(device, device->getQueueFamilies().graphicsFamily.value()), 
-    vertexBuffer(device, sizeof(Vertex) * verticies.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {
+    vertexBuffer(device, sizeof(Vertex) * verticies.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
+    indexBuffer(device, sizeof(uint16_t) * indicies.size(), VK_BUFFER_USAGE_2_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
     
     createFramebuffers();
 
@@ -85,9 +91,33 @@ BasicRenderer::BasicRenderer(Device* device, SwapChain* swapchain)
         buffers.emplace_back(device, &pool);
     }
 
-    void* data = vertexBuffer.mapBuffer();
-    memcpy(data, verticies.data(), sizeof(Vertex) * verticies.size());
-    vertexBuffer.unmapBuffer();
+    {
+        uint64_t size = sizeof(Vertex) * verticies.size();
+        Buffer stagingBuffer(device, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE, 
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+        void* data = stagingBuffer.mapBuffer();
+        memcpy(data, verticies.data(), size);
+        stagingBuffer.unmapBuffer();
+
+        Buffer::copyBuffer(device, &stagingBuffer, &vertexBuffer, size);
+
+    }
+
+    {
+        uint64_t size = sizeof(uint16_t) * indicies.size();
+        Buffer stagingBuffer(device, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE, 
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+        void* data = stagingBuffer.mapBuffer();
+        memcpy(data, indicies.data(), size);
+        stagingBuffer.unmapBuffer();
+
+        Buffer::copyBuffer(device, &stagingBuffer, &indexBuffer, size);
+
+    }
+
+    
 }
 
 BasicRenderer::~BasicRenderer() {
@@ -126,6 +156,7 @@ void BasicRenderer::render(size_t frame, Fence* fence, std::vector<Semaphore*> s
     beginRenderPass(frame);
     pipeline.bind(&buffers[frame]);
     vertexBuffer.bindVertex(&buffers[frame]);
+    indexBuffer.bindIndex(&buffers[frame]);
     
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -141,8 +172,8 @@ void BasicRenderer::render(size_t frame, Fence* fence, std::vector<Semaphore*> s
     scissor.extent = swapchain->getSwapChainExtent();
     vkCmdSetScissor(buffers[frame].getHandle(), 0, 1, &scissor);
 
-    vkCmdDraw(buffers[frame].getHandle(), static_cast<uint32_t>(verticies.size()), 1, 0, 0);
+    vkCmdDrawIndexed(buffers[frame].getHandle(), static_cast<uint32_t>(indicies.size()), 1, 0, 0, 0);
     vkCmdEndRenderPass(buffers[frame].getHandle());
     buffers[frame].stopRecording();
-    buffers[frame].submit(fence, signalSemaphores, waitSemaphores, waitStages);
+    buffers[frame].submit(device->getGraphicsQueue(), fence, signalSemaphores, waitSemaphores, waitStages);
 }

@@ -19,6 +19,7 @@ private:
     CommandPool pool;
     std::vector<CommandBuffer> buffers;
     Buffer vertexBuffer;
+    Buffer indexBuffer;
 public:
     BasicRenderer(Device* device, SwapChain* swapchain);
     ~BasicRenderer();
